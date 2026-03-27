@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PORTAL AULAS CAVIGA PEI</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+body {
+    margin: 0;
+    background: #020617;
+    color: white;
+    font-family: 'Inter';
+}
+
+header {
+    font-family: 'Bebas Neue';
+    font-size: 42px;
+    padding: 20px;
+    color: #e50914;
+}
+
+#banner {
+    height: 220px;
+    margin: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: end;
+    padding: 20px;
+    font-family: 'Bebas Neue';
+    font-size: 32px;
+    background-size: cover;
+    background-position: center;
+}
+
+.filtros {
+    display: flex;
+    gap: 15px;
+    padding: 0 20px 20px;
+}
+
+select {
+    background: #020617;
+    border: 1px solid #334155;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.row { margin: 20px; }
+
+.row h2 { font-family: 'Bebas Neue'; }
+
+.cards {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+}
+
+.card {
+    min-width: 240px;
+    height: 150px;
+    border-radius: 12px;
+    background-size: cover;
+    position: relative;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.card:hover { transform: scale(1.08); }
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+}
+
+.info {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 2;
+    font-size: 13px;
+}
+
+.info strong { font-family: 'Bebas Neue'; }
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: black;
+    z-index: 9999;
+}
+
+.modal-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 60px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.modal-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.95), rgba(0,0,0,0.4));
+}
+
+.modal-box {
+    position: relative;
+    max-width: 500px;
+    z-index: 2;
+}
+
+.modal-box h2 {
+    font-family: 'Bebas Neue';
+    font-size: 40px;
+    margin-bottom: 15px;
+}
+
+.modal-box p {
+    font-size: 15px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.validar { background: #22c55e; }
+.fechar { background: #ef4444; }
+
+.fechar-topo {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 3;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>🎓 CAVIGA PEI</header>
+
+<div id="banner"></div>
+
+<div class="filtros">
+<select id="filtroTurma">
+<option value="">Todas Turmas</option>
+</select>
+
+<select id="filtroBimestre">
+<option value="">Todos Bimestres</option>
+</select>
+</div>
+
+<div id="app"></div>
+
+<div class="modal" id="modal">
+  <div class="modal-content" id="modalBg">
+
+    <div class="fechar-topo" onclick="fechar()">✖</div>
+
+    <div class="modal-box">
+        <h2 id="titulo"></h2>
+        <p id="conteudo"></p>
+        <p id="objetivo"></p>
+
+        <button class="validar" id="validar">Validar Aula</button>
+        <button class="fechar" onclick="fechar()">Fechar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+const icones={
+"Matemática":"📐","Português":"📖","Ciências":"🔬",
+"Geografia":"🌍","História":"🏛️","Arte":"🎨",
+"Educação Física":"⚽","Inglês":"🇺🇸"
+};
+
+const banners={
+"Matemática":"https://images.unsplash.com/photo-1635070041078-e363dbe005cb",
+"Português":"https://images.unsplash.com/photo-1524995997946-a1c2e315a42f",
+"Ciências":"https://images.unsplash.com/photo-1532094349884-543bc11b234d",
+"Geografia":"https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+"História":"https://images.unsplash.com/photo-1461360228754-6e81c478b882",
+"Arte":"https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b",
+"Educação Física":"https://images.unsplash.com/photo-1517649763962-0c623066013b",
+"Inglês":"https://images.unsplash.com/photo-1523240795612-9a054b0db644"
+};
+
+function atualizarBanner(m){
+banner.style.backgroundImage=`url(${banners[m]})`;
+banner.innerHTML=`${icones[m] || "📚"} ${m}`;
+}
+
+let todas=[];
+
+fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQcQWNKlsbBM7U41GH55DoKlolF1cBQsMzqaPniLUvW8gBMALoVNPPDrwuBAuvCynoEgfaGbws3CujO/pub?output=csv")
+.then(r=>r.text())
+.then(t=>{
+
+const dados=t.split("\n").slice(1).map(l=>{
+const c=l.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+if(!c)return null;
+
+return{
+turma:c[1]?.replace(/"/g,'').trim(),
+materia:c[2]?.replace(/"/g,'').trim(),
+bimestre:c[3]?.replace(/"/g,'').trim(),
+aula:c[4]?.replace(/"/g,'').trim(),
+nome:c[5]?.replace(/"/g,'').trim(),
+conteudo:c[6]?.replace(/"/g,'').trim(),
+objetivo:c[7]?.replace(/"/g,'').trim(),
+form:c[8]?.replace(/"/g,'').trim()
+}}).filter(Boolean);
+
+todas=dados;
+
+[...new Set(dados.map(a=>a.turma))].forEach(x=>{
+filtroTurma.innerHTML+=`<option>${x}</option>`;
+});
+
+[...new Set(dados.map(a=>a.bimestre))].forEach(x=>{
+filtroBimestre.innerHTML+=`<option>${x}</option>`;
+});
+
+render(dados);
+});
+
+function filtro(){
+render(todas.filter(a=>
+(!filtroTurma.value||a.turma==filtroTurma.value)&&
+(!filtroBimestre.value||a.bimestre==filtroBimestre.value)
+));
+}
+
+filtroTurma.onchange=filtro;
+filtroBimestre.onchange=filtro;
+
+function render(d){
+
+app.innerHTML="";
+const materias=[...new Set(d.map(a=>a.materia))];
+
+if(materias.length) atualizarBanner(materias[0]);
+
+materias.forEach(m=>{
+
+const row=document.createElement("div");
+row.className="row";
+row.innerHTML=`<h2>${icones[m] || "📚"} ${m}</h2>`;
+
+const box=document.createElement("div");
+box.className="cards";
+
+d.filter(a=>a.materia==m).forEach(a=>{
+
+const card=document.createElement("div");
+card.className="card";
+card.style.backgroundImage=`url(${banners[m]})`;
+
+card.innerHTML=`
+<div class="info">
+<strong>${a.aula}</strong><br>${a.nome}
+</div>
+`;
+
+card.onclick=()=>abrir(a);
+
+box.appendChild(card);
+});
+
+row.appendChild(box);
+app.appendChild(row);
+
+});
+}
+
+function abrir(aula){
+
+modal.style.display="block";
+
+modalBg.style.backgroundImage=`url(${banners[aula.materia]})`;
+
+titulo.innerText=aula.nome;
+
+// ✅ CONTEÚDO CORRIGIDO
+conteudo.innerHTML = "<b>Conteúdo:</b><br>" + 
+  aula.conteudo.replace(/\n/g, "<br>");
+
+// ✅ OBJETIVO CORRIGIDO (LISTA)
+let lista = aula.objetivo.split('\n');
+
+let html = lista
+  .filter(item => item.trim() !== "")
+  .map(item => `• ${item}`)
+  .join('<br>');
+
+objetivo.innerHTML = "<br><b>Objetivo:</b><br>" + html;
+
+validar.onclick=()=>{
+window.open(aula.form);
+localStorage.setItem(aula.nome,true);
+}
+}
+
+function fechar(){
+modal.style.display="none";
+}
+
+</script>
+
+</body>
+</html>
